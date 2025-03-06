@@ -17,11 +17,20 @@ title_data = None
 artist_data = None
 album_data = None
 artwork_data = {}
-
-
+connected_clients = {}  
 @sio.event
 def connect(sid, environ):
-    print(f"Client connected: {sid}")
+    print(f"Connected: {sid}")
+    print("Connected to client")    
+    connected_clients[sid] = True 
+    sio.emit('my_response', {'msg': 'Hello from server'}, to=sid)
+
+@sio.event
+def disconnect(sid):
+    print(f"Disconnected: {sid}")
+    print("Disconnected from client")
+    if sid in connected_clients:
+        del connected_clients[sid]
 
 @sio.event
 def sendTitle(sid, data):
@@ -48,8 +57,12 @@ def sendArtwork(sid, data):
     print(f"Received Artwork: {artwork_data}")
 
 
-def send_play():
-    sio.emit('command', 'play')
+
+@sio.event
+def send_play(sid):
+    print("Emitting 'command' with 'play'")
+    sio.emit('command', "play", to=sid)
+    print(f"Emit finished {sid}")
     
 def send_pause():
     sio.emit('command', 'pause')
@@ -108,7 +121,7 @@ def handle_user_input():
         try:
             choice = int(input("\nEnter your choice: "))
             if choice == 1:
-                send_play()
+                send_play(connected_clients[0])
             elif choice == 2:
                 send_pause()
             elif choice == 3:
@@ -116,7 +129,7 @@ def handle_user_input():
             elif choice == 4:
                 send_previous()
             elif choice == 5:
-                print(get_media_title())
+                disconnect()
             elif choice == 6:
                 print_stored_metadata()  
             elif choice == 7:
