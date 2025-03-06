@@ -82,9 +82,10 @@ def control_media(command):
 
 def get_media_title():
     try:
+        pythoncom.CoInitialize()
         sessions = AudioUtilities.GetAllSessions()
         for session in sessions:
-            if session.Process and session.Process.name().lower() in ["spotify.exe"]:
+            if session.Process and session.Process.name().lower() in ["spotify.exe","chrome.exe","vlc.exe","windowsmedia.exe","brave.exe"]:
                 return session.Process.name()
         return "No media playing"
     except Exception as e:
@@ -129,6 +130,6 @@ def handle_user_input():
 input_thread = threading.Thread(target=handle_user_input)
 input_thread.daemon = True
 input_thread.start()
-
+pythoncom.CoInitialize()
 if __name__ == '__main__':
     eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 8080)), app)
