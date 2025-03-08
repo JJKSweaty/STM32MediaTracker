@@ -7,28 +7,33 @@ import eventlet.wsgi
 import threading
 import pyautogui
 import pythoncom
+import time
 
+# Socket.IO server setup
 sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
 
+connected_sids = []
+connected_clients = {}
 
-
+# Metadata storage
 title_data = None
 artist_data = None
 album_data = None
 artwork_data = {}
-connected_clients = {}  
+
 @sio.event
 def connect(sid, environ):
-    print(f"Connected: {sid}")
-    print("Connected to client")    
-    connected_clients[sid] = True 
+    print(f"[CONNECTED] Client: {sid}")
+    connected_sids.append(sid)
+    connected_clients[sid] = True
     sio.emit('my_response', {'msg': 'Hello from server'}, to=sid)
 
 @sio.event
 def disconnect(sid):
-    print(f"Disconnected: {sid}")
-    print("Disconnected from client")
+    print(f"[DISCONNECTED] Client: {sid}")
+    if sid in connected_sids:
+        connected_sids.remove(sid)
     if sid in connected_clients:
         del connected_clients[sid]
 
@@ -36,113 +41,93 @@ def disconnect(sid):
 def sendTitle(sid, data):
     global title_data
     title_data = data
-    print(f"Received Title: {title_data}")
+    print(f"📀 Title: {title_data}")
 
 @sio.event
 def sendArtist(sid, data):
     global artist_data
     artist_data = data
-    print(f"Received Artist: {artist_data}")
+    print(f"🎤 Artist: {artist_data}")
 
 @sio.event
 def sendAlbum(sid, data):
     global album_data
     album_data = data
-    print(f"Received Album: {album_data}")
+    print(f"📀 Album: {album_data}")
 
 @sio.event
 def sendArtwork(sid, data):
     global artwork_data
     artwork_data = data
-    print(f"Received Artwork: {artwork_data}")
+    print(f"🖼️ Artwork Received")
 
-
-
-@sio.event
-def send_play(sid):
-    print("Emitting 'command' with 'play'")
-    sio.emit('command', "play", to=sid)
-    print(f"Emit finished {sid}")
-    
-def send_pause():
-    sio.emit('command', 'pause')
-    
-def send_next():
-    sio.emit('command', 'next')
-    control_media('next')
-
-def send_previous():
-    sio.emit('command', 'previous')
-    control_media('previous')
-
-def control_media(command):
-    try:
-        pythoncom.CoInitialize()
-        sessions = AudioUtilities.GetAllSessions() 
-        for session in sessions:
-            if session.Process and session.Process.name().lower() in ["spotify.exe", "chrome.exe", "vlc.exe", "windowsmedia.exe", "brave.exe"]:
-                if command == 'play':
-                    send_play()
-                elif command == 'pause':
-                    send_pause()
-                elif command == 'next':
-                    pyautogui.press('right')  
-                elif command == 'previous':
-                    pyautogui.press('left')
-        pythoncom.CoInitialize()
-    except Exception as e:
-        print(f"Error controlling media: {str(e)}")
+def emit_command(command):
+    """Send command to all connected clients"""
+    for sid in connected_sids:
+        print(f"📡 Sending '{command}' to {sid}")
+        sio.emit('command', command, to=sid)
 
 def get_media_title():
+    """Detect active media player process"""
     try:
         pythoncom.CoInitialize()
         sessions = AudioUtilities.GetAllSessions()
         for session in sessions:
-            if session.Process and session.Process.name().lower() in ["spotify.exe","chrome.exe","vlc.exe","windowsmedia.exe","brave.exe"]:
+            if session.Process and session.Process.name().lower() in [
+                "spotify.exe", "chrome.exe", "vlc.exe", "windowsmedia.exe", "brave.exe"
+            ]:
                 return session.Process.name()
         return "No media playing"
     except Exception as e:
         return f"Error: {str(e)}"
 
-
 def print_stored_metadata():
+    """Prints stored media metadata"""
     print("\n--- Stored Metadata ---")
-    print(f"Title: {title_data}")
-    print(f"Artist: {artist_data}")
-    print(f"Album: {album_data}")
-    print(f"Artwork: {artwork_data}")
+    print(f"🎵 Title: {title_data}")
+    print(f"🎤 Artist: {artist_data}")
+    print(f"📀 Album: {album_data}")
+    print(f"🖼️ Artwork: {artwork_data}")
     print("-----------------------\n")
 
+def run_server():
+    """Runs the Socket.IO server"""
+    print("[SERVER] Running on port 8080...")
+    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 8080)), app)
 
-def handle_user_input():
-    print("Press 1 to play, 2 to pause, 3 to next, 4 to previous, 5 to get media title, 6 to show stored metadata, 7 to exit")
-    
+def command_input_thread():
+    """Handles user commands asynchronously"""
+    commands = {
+        "1": "play",
+        "2": "pause",
+        "3": "next",
+        "4": "previous",
+        "6": "metadata",
+        "7": "exit"
+    }
     while True:
-        try:
-            choice = int(input("\nEnter your choice: "))
-            if choice == 1:
-                send_play(connected_clients[0])
-            elif choice == 2:
-                send_pause()
-            elif choice == 3:
-                send_next()
-            elif choice == 4:
-                send_previous()
-            elif choice == 5:
-                disconnect()
-            elif choice == 6:
-                print_stored_metadata()  
-            elif choice == 7:
+        print("\nOptions: 1: Play, 2: Pause, 3: Next, 4: Previous, 6: Metadata, 7: Exit")
+        choice = input("\nChoice: ").strip()
+        if choice in commands:
+            if choice == "6":
+                print_stored_metadata()
+            elif choice == "7":
+                print("[EXIT] Stopping command input...")
                 break
             else:
-                print("Invalid choice")
-        except Exception as e:
-            print(f"Error: {str(e)}")
-            continue
+                emit_command(commands[choice])
+        else:
+            print("[ERROR] Invalid choice!")
 
-input_thread = threading.Thread(target=handle_user_input)
-input_thread.daemon = True
-input_thread.start()
-pythoncom.CoInitialize()
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 8080)), app)
+    # Start server in a separate thread
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+
+    # Start input handling in a separate thread
+    input_thread = threading.Thread(target=command_input_thread, daemon=True)
+    input_thread.start()
+
+    # Keep the script running
+    while True:
+        time.sleep(1)
