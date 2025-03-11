@@ -97,7 +97,7 @@ def save_tokens(tokens):
     with open("tokens.json", "w") as f:
         json.dump(tokens, f, indent=3)
 
-
+# Mainly trying to get the player info in a json format
 def getPlayerInfo():
     if authorized_req:
         tokens=load_tokens()

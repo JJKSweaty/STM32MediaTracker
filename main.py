@@ -1,6 +1,7 @@
 import threading
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
+from flask_cors import CORS
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 import os
@@ -8,8 +9,10 @@ import base64
 from dotenv import load_dotenv
 import requests
 import json
+import webbrowser
 import urllib.parse
 load_dotenv()
+pending_command = None
 
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
@@ -35,7 +38,7 @@ def callback():
     return "Authorization successful. You can close this window."
 
 
-@socketio.on("connect")
+@socketio.event("connect")
 def handle_connect():
     print(f"[CONNECTED] Client connected")
     connected_clients["client"] = True  
@@ -70,6 +73,25 @@ def receive_artwork(data):
     artwork_data = data
     print(f"[RECEIVED ARTWORK]: {artwork_data}")
 
+@app.route("/send_command", methods=["POST"])
+def set_command():
+    global pending_command
+    data = request.json
+    command = data.get("command")
+    if command in ["play", "pause", "next", "previous"]:
+        print(f"[🚀 COMMAND SET BY USER]: {command}")
+        pending_command = command
+        return jsonify({"status": "command set", "command": command})
+    return jsonify({"error": "invalid command"}), 400
+
+@app.route("/get_command", methods=["GET"])
+def get_command():
+    global pending_command
+    if pending_command:
+        cmd = pending_command
+        pending_command = None  # Clear it after sending
+        return jsonify({"command": cmd})
+    return jsonify({"command": None})
 def get_metadata():
     return {
         "title": title_data,

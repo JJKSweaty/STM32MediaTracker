@@ -1,10 +1,15 @@
 from main import socketio, connected_clients
-
+import requests
 def send_command(command):
-    """ Sends command to the connected client """
-    print(f"[🚀 SENDING COMMAND]: {command}")
-    for sid in connected_clients.keys():
-        socketio.emit("command", command, room=sid)
+    print(f"[🚀 SENDING COMMAND via API]: {command}")
+    try:
+        res = requests.post("http://localhost:8080/send_command", json={"command": command})
+        if res.ok:
+            print("[✅ COMMAND SENT SUCCESSFULLY]")
+        else:
+            print("[❌ SERVER ERROR]:", res.status_code, res.text)
+    except Exception as e:
+        print("[❌ ERROR SENDING COMMAND]:", str(e))
 
 def print_stored_metadata(metadata):
     """ Prints the stored metadata from main.py """
