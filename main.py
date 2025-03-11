@@ -1,7 +1,7 @@
 import threading
-from flask import Flask
+from flask import Flask, request
 from flask_socketio import SocketIO
-
+from control_media import Auth, get_token , set_token
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
@@ -11,6 +11,15 @@ title_data = ""
 artist_data = ""
 album_data = ""
 artwork_data = ""
+
+@app.route("/callback")
+def callback():
+    codes=request.args.get("code")
+    if(codes): 
+     print(f"[CALLBACK] Received code: {codes}")
+    else:
+        return "Error: No code received"
+    return "Code received"
 
 @socketio.on("connect")
 def handle_connect():
@@ -73,6 +82,7 @@ def handle_user_input():
                 send_next()
             elif choice == "4":
                 send_previous()
+                set_token()
             elif choice == "5":
                 print(f"[ACTIVE METADATA]: {get_metadata()}")
             elif choice == "6":
@@ -84,6 +94,8 @@ def handle_user_input():
             elif choice == "7":
                 print("[EXIT] Stopping user input loop.")
                 break
+            elif choice == "8":
+                Auth()
             else:
                 print("[ERROR] Invalid choice.")
         except Exception as e:
