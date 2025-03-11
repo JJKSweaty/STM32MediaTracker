@@ -1,17 +1,26 @@
 import threading
 from flask import Flask, request
 from flask_socketio import SocketIO
-from control_media import Auth, get_token , set_token
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+import os
+import base64
+from dotenv import load_dotenv
+import requests
+import json
+import urllib.parse
+load_dotenv()
 
-# Store Connected Clients and Metadata
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
 connected_clients = {}
 title_data = ""
 artist_data = ""
 album_data = ""
 artwork_data = ""
-
+client_creds = f"{CLIENT_ID}:{CLIENT_SECRET}"
+encoded = base64.b64encode(client_creds.encode()).decode()
 @app.route("/callback")
 def callback():
     codes=request.args.get("code")
@@ -19,7 +28,12 @@ def callback():
      print(f"[CALLBACK] Received code: {codes}")
     else:
         return "Error: No code received"
-    return "Code received"
+    response = requests.post("https://accounts.spotify.com/api/token", headers={"Authorization": "Basic "+encoded}, data={"grant_type":"authorization_code","code":codes,"redirect_uri":REDIRECT_URI})
+    tokens = response.json()
+    with open("tokens.json", "w") as f:
+        json.dump(tokens, f, indent=3)
+    return "Authorization successful. You can close this window."
+
 
 @socketio.on("connect")
 def handle_connect():
@@ -66,6 +80,7 @@ def get_metadata():
 
 def handle_user_input():
     from metadata import send_play, send_pause, send_next, send_previous, print_stored_metadata
+    from control_media import Auth, getProfile
 
     print("\n[CONTROL PANEL]")
     print("Type '1' to Play, '2' to Pause, '3' Next, '4' Previous")
@@ -82,13 +97,13 @@ def handle_user_input():
                 send_next()
             elif choice == "4":
                 send_previous()
-                set_token()
             elif choice == "5":
                 print(f"[ACTIVE METADATA]: {get_metadata()}")
             elif choice == "6":
                 metadata = get_metadata()
                 if metadata["title"]:
                     print_stored_metadata(metadata)
+                    getProfile()
                 else:
                     print("[STORED METADATA]: No metadata stored yet.")
             elif choice == "7":
