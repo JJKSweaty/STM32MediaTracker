@@ -33,7 +33,7 @@ def Auth():
     webbrowser.open(auth_url)
 
 def getProfile():
-    if authorized_req():
+        authorized_req()
         with open("tokens.json", "r") as f:
             tokens = json.load(f)
         access_token = tokens["access_token"]
@@ -44,9 +44,11 @@ def getProfile():
 
 # Using this function to check if the token is still valid
 def authorized_req():
-    # getting token
     state=False
     while state==False:
+        if not os.path.exists("tokens.json"):
+            print("Error: No token.json file found")
+            Auth()
         with open("tokens.json", "r") as f:
             tokens = json.load(f)
         access_token = tokens["access_token"]
@@ -54,14 +56,15 @@ def authorized_req():
         response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers={"Authorization": f"Bearer {access_token}"})
         if response.status_code == 200:
             state=True
+            return state
         else:
             refresh()
+            state=True
     return state
 
 # It will refresh the token if its expired
 def refresh():
-    with open("tokens.json", "r") as f:
-        tokens = json.load(f)
+    tokens=load_tokens()
     refresh_token = tokens["refresh_token"]
     response = requests.post("https://accounts.spotify.com/api/token", headers={"Authorization": "Basic "+encoded}, data={"grant_type":"refresh_token","refresh_token":refresh_token})
     # if valid api req then update the tokens
@@ -70,9 +73,19 @@ def refresh():
         # checking if the refresh token is being sent in the response
         if "refresh_token" not in new_tokens:
             new_tokens["refresh_token"] = refresh_token
-        with open("tokens.json", "w") as f:
-            json.dump(tokens, f, indent=3)
+        save_tokens(new_tokens)
     # If even the refresh token is expired then reauthenticate the user
     else:
         print("Error: Could not refresh token")
         Auth()
+
+def load_tokens():
+    if not os.path.exists("tokens.json"):
+        print("Error: No token.json file found")
+        Auth()
+    with open("tokens.json", "r") as f:
+        return json.load(f)
+    
+def save_tokens(tokens):
+    with open("tokens.json", "w") as f:
+        json.dump(tokens, f, indent=3)

@@ -101,9 +101,9 @@ def handle_user_input():
                 print(f"[ACTIVE METADATA]: {get_metadata()}")
             elif choice == "6":
                 metadata = get_metadata()
+                getProfile()
                 if metadata["title"]:
                     print_stored_metadata(metadata)
-                    getProfile()
                 else:
                     print("[STORED METADATA]: No metadata stored yet.")
             elif choice == "7":
