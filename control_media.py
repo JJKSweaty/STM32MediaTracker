@@ -27,13 +27,20 @@ def get_media_title():
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+
+
+
+
+
+# SPOTIFY SECTION STARTS HERE
 def Auth():
     encoded_redirect_uri = urllib.parse.quote(REDIRECT_URI, safe='')
     auth_url = f"https://accounts.spotify.com/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={encoded_redirect_uri}&scope=user-read-playback-state"
     webbrowser.open(auth_url)
 
 def getProfile():
-        authorized_req()
+    if authorized_req():
         with open("tokens.json", "r") as f:
             tokens = json.load(f)
         access_token = tokens["access_token"]
@@ -89,3 +96,17 @@ def load_tokens():
 def save_tokens(tokens):
     with open("tokens.json", "w") as f:
         json.dump(tokens, f, indent=3)
+
+
+def getPlayerInfo():
+    if authorized_req:
+        tokens=load_tokens()
+        access_token = tokens["access_token"]
+        response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers={"Authorization": f"Bearer {access_token}"})
+        if response.status_code == 200:
+            data = response.json()
+            with open("player_info.json", "w") as f:
+                json.dump(data, f, indent=3)
+        else:
+            print("Error: Could not get player info")
+            print(response.text)
