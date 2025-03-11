@@ -24,6 +24,7 @@ album_data = ""
 artwork_data = ""
 client_creds = f"{CLIENT_ID}:{CLIENT_SECRET}"
 encoded = base64.b64encode(client_creds.encode()).decode()
+
 @app.route("/callback")
 def callback():
     codes=request.args.get("code")
@@ -79,7 +80,7 @@ def set_command():
     data = request.json
     command = data.get("command")
     if command in ["play", "pause", "next", "previous"]:
-        print(f"[🚀 COMMAND SET BY USER]: {command}")
+        print(f"[COMMAND SET BY USER]: {command}")
         pending_command = command
         return jsonify({"status": "command set", "command": command})
     return jsonify({"error": "invalid command"}), 400
