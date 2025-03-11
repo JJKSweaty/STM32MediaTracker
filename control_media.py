@@ -33,29 +33,30 @@ def Auth():
     webbrowser.open(auth_url)
 
 def getProfile():
-    with open("tokens.json", "r") as f:
-        tokens = json.load(f)
-    access_token = tokens["access_token"]
-    response = requests.get("https://api.spotify.com/v1/me", headers={"Authorization": f"Bearer {access_token}"})
-    if response.status_code == 200:
-        data = response.json()
+    if authorized_req():
+        with open("tokens.json", "r") as f:
+            tokens = json.load(f)
+        access_token = tokens["access_token"]
+        response = requests.get("https://api.spotify.com/v1/me", headers={"Authorization": f"Bearer {access_token}"})
+        if response.status_code == 200:
+            data = response.json()
         print(json.dumps(data, indent=3))
 
 # Using this function to check if the token is still valid
 def authorized_req():
     # getting token
-    with open("tokens.json", "r") as f:
-        tokens = json.load(f)
-    access_token = tokens["access_token"]
-    # using a random spotify req to test if it needs to refreshed
-    response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers={"Authorization": f"Bearer {access_token}"})
-    if response.status_code == 200:
-        return True
-    elif response.status_code == 401:
-        refresh()
-    else:
-        print("Error:", response.status_code)
-        return False
+    state=False
+    while state==False:
+        with open("tokens.json", "r") as f:
+            tokens = json.load(f)
+        access_token = tokens["access_token"]
+        # using a random spotify req to test if it needs to refreshed
+        response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers={"Authorization": f"Bearer {access_token}"})
+        if response.status_code == 200:
+            state=True
+        else:
+            refresh()
+    return state
 
 # It will refresh the token if its expired
 def refresh():
