@@ -102,39 +102,58 @@ def get_metadata():
     }
 
 def handle_user_input():
-    from metadata import send_play, send_pause, send_next, send_previous, print_stored_metadata
-    from control_media import Auth, getProfile, getPlayerInfo
+    from control_media import (
+        Auth,
+        getPlayerInfo,
+        printSpotifyInfo,
+        spotifyPlay,
+        spotifyPause,
+        spotifyNext,
+        spotifyPrevious,
+        spotifyVolume,
+        spotifySeek
+    )
 
-    print("\n[CONTROL PANEL]")
-    print("Type '1' to Play, '2' to Pause, '3' Next, '4' Previous")
-    print("Type '5' for Metadata, '6' to Show Stored Metadata, '7' to Exit\n")
+    print("\n[🎮 CONTROL PANEL]")
+    print("Type:")
+    print("  1 - ▶️ Play")
+    print("  2 - ⏸ Pause")
+    print("  3 - ⏭ Next")
+    print("  4 - ⏮ Previous")
+    print("  5 - 🔍 Show Current Metadata")
+    print("  6 - 💽 Show Stored Metadata")
+    print("  7 - ❌ Exit")
+    print("  8 - 🔐 Re-auth (Manual Auth)")
+    print("  9 - 🔊 Set Volume")
+    print(" 10 - ⏩ Seek to position (ms)\n")
 
     while True:
         try:
             choice = input("> ").strip()
+
             if choice == "1":
-                send_play()
+                spotifyPlay()
             elif choice == "2":
-                send_pause()
+                spotifyPause()
             elif choice == "3":
-                send_next()
+                spotifyNext()
             elif choice == "4":
-                send_previous()
+                spotifyPrevious()
             elif choice == "5":
-                print(f"[ACTIVE METADATA]: {get_metadata()}")
-                print (getPlayerInfo())
+                printSpotifyInfo()
             elif choice == "6":
-                metadata = get_metadata()
-                getProfile()
-                if metadata["title"]:
-                    print_stored_metadata(metadata)
-                else:
-                    print("[STORED METADATA]: No metadata stored yet.")
+                printSpotifyInfo()
             elif choice == "7":
                 print("[EXIT] Stopping user input loop.")
                 break
             elif choice == "8":
                 Auth()
+            elif choice == "9":
+                vol = input("Enter volume (0–100): ").strip()
+                spotifyVolume(int(vol))
+            elif choice == "10":
+                pos = input("Enter seek position (in ms): ").strip()
+                spotifySeek(int(pos))
             else:
                 print("[ERROR] Invalid choice.")
         except Exception as e:
