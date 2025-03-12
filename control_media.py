@@ -107,6 +107,7 @@ def getPlayerInfo():
             data = response.json()
             with open("player_info.json", "w") as f:
                 json.dump(data, f, indent=3)
+                
         else:
             print("Error: Could not get player info")
             print(response.text)

@@ -103,7 +103,7 @@ def get_metadata():
 
 def handle_user_input():
     from metadata import send_play, send_pause, send_next, send_previous, print_stored_metadata
-    from control_media import Auth, getProfile
+    from control_media import Auth, getProfile, getPlayerInfo
 
     print("\n[CONTROL PANEL]")
     print("Type '1' to Play, '2' to Pause, '3' Next, '4' Previous")
@@ -122,6 +122,7 @@ def handle_user_input():
                 send_previous()
             elif choice == "5":
                 print(f"[ACTIVE METADATA]: {get_metadata()}")
+                print (getPlayerInfo())
             elif choice == "6":
                 metadata = get_metadata()
                 getProfile()
