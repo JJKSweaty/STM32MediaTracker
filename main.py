@@ -152,7 +152,7 @@ def handle_user_input():
                 vol = input("Enter volume (0–100): ").strip()
                 spotifyVolume(int(vol))
             elif choice == "10":
-                pos = input("Enter seek position (in ms): ").strip()
+                pos = input("Enter seek position (in s): ").strip()
                 spotifySeek(int(pos))
             else:
                 print("[ERROR] Invalid choice.")

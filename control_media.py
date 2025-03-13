@@ -1,5 +1,5 @@
 import pythoncom
-from pycaw.pycaw import AudioUtilities
+from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume, IAudioEndpointVolume, IAudioSessionManager2, IAudioSessionControl2, IAudioSessionEnumerator, IAudioSessionControl, IAudioMeterInformation,IAudioSessionEvents
 import os
 from dotenv import load_dotenv
 import requests
@@ -7,6 +7,9 @@ import json
 import base64
 import webbrowser
 import urllib.parse
+import time
+import sys
+from comtypes import CLSCTX_ALL
 load_dotenv()
 
 spotify_data = {
@@ -22,19 +25,26 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 encoded = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
-def get_media_title():
+
+# AUDIO SECTION STARTS HERE
+# This gets all sessions that can have audio
+def get_all_media():
+    sessions = AudioUtilities.GetAllSessions()
+    print("\n[🎚 ACTIVE AUDIO SESSIONS]")
+    for i, session in enumerate(sessions):
+        if session.Process:
+            vol = session._ctl.QueryInterface(ISimpleAudioVolume)
+            print(f"{i+1}. {session.Process.name()} - Volume: {vol.GetMasterVolume()*100:.0f}% - Muted: {vol.GetMute()}")
+
+# All application volume control
+def set_volume(volume):
     try:
-        pythoncom.CoInitialize()
         sessions = AudioUtilities.GetAllSessions()
         for session in sessions:
-            if session.Process and session.Process.name().lower() in [
-                "spotify.exe", "chrome.exe", "vlc.exe", "windowsmedia.exe", "brave.exe"
-            ]:
-                return session.Process.name()
-        return "No media playing"
+            volume.SetMasterVolume(volume, None)
     except Exception as e:
         return f"Error: {str(e)}"
-
+    return "Volume set successfully"
 
 
 
@@ -143,7 +153,7 @@ def spotifyPlay():
             tokens=load_tokens()
             access_token = tokens["access_token"]
             response = requests.put("https://api.spotify.com/v1/me/player/play", headers={"Authorization": f"Bearer {access_token}"})
-            if response.status_code == 204:
+            if response.ok:
                 print("Playing")
             else:
                 print("Error: Could not play")
@@ -156,7 +166,7 @@ def spotifyPause():
             tokens=load_tokens()
             access_token = tokens["access_token"]
             response = requests.put("https://api.spotify.com/v1/me/player/pause", headers={"Authorization": f"Bearer {access_token}"})
-            if response.status_code == 204:
+            if response.ok:
                 print("Paused")
             else:
                 print("Error: Could not pause")
@@ -168,7 +178,7 @@ def spotifyNext():
         tokens=load_tokens()
         access_token = tokens["access_token"]
         response = requests.post("https://api.spotify.com/v1/me/player/next", headers={"Authorization": f"Bearer {access_token}"})
-        if response.status_code == 204:
+        if response.ok:
             print("Next")
         else:
             print("Error: Could not play next")
@@ -180,7 +190,7 @@ def spotifyPrevious():
         tokens=load_tokens()
         access_token = tokens["access_token"]
         response = requests.post("https://api.spotify.com/v1/me/player/previous", headers={"Authorization": f"Bearer {access_token}"})
-        if response.status_code == 204:
+        if response.ok:
             print("Previous")
         else:
             print("Error: Could not play previous")
@@ -192,8 +202,8 @@ def spotifySeek(position_ms):
     if authorized_req():
         tokens=load_tokens()
         access_token = tokens["access_token"]
-        response = requests.put(f"https://api.spotify.com/v1/me/player/seek?position_ms={position_ms}", headers={"Authorization": f"Bearer {access_token}"})
-        if response.status_code == 204:
+        response = requests.put(f"https://api.spotify.com/v1/me/player/seek?position_ms={position_ms*1000}", headers={"Authorization": f"Bearer {access_token}"})
+        if response.ok:
             print("Seeked")
         else:
             print("Error: Could not seek")
@@ -206,8 +216,10 @@ def spotifyVolume(volume_percent):
         tokens=load_tokens()
         access_token = tokens["access_token"]
         response = requests.put(f"https://api.spotify.com/v1/me/player/volume?volume_percent={volume_percent}", headers={"Authorization": f"Bearer {access_token}"})
-        if response.status_code == 204:
+        if response.ok:
             print("Volume changed")
         else:
             print("Error: Could not change volume")
             print(response.text)
+
+# SPOTIFY SECTION ENDS HERE
