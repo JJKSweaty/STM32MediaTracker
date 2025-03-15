@@ -1,7 +1,6 @@
 import threading
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
-from flask_cors import CORS
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 import os
@@ -113,7 +112,12 @@ def handle_user_input():
         spotifyVolume,
         spotifySeek
     )
+    from metadata import (
+        send_play,
+        send_pause,
+        print_stored_metadata
 
+    )
     print("\n[🎮 CONTROL PANEL]")
     print("Type:")
     print("  1 - ▶️ Play")
@@ -132,7 +136,7 @@ def handle_user_input():
             choice = input("> ").strip()
 
             if choice == "1":
-                spotifyPlay()
+                send_play()
             elif choice == "2":
                 spotifyPause()
             elif choice == "3":
@@ -140,7 +144,8 @@ def handle_user_input():
             elif choice == "4":
                 spotifyPrevious()
             elif choice == "5":
-                printSpotifyInfo()
+                metadata = get_metadata()
+                print_stored_metadata(metadata)
             elif choice == "6":
                 printSpotifyInfo()
             elif choice == "7":

@@ -2,6 +2,7 @@ from main import socketio, connected_clients
 import requests
 def send_command(command):
     print(f"[SENDING COMMAND via API]: {command}")
+    socketio.emit("command", {"command": command})
     try:
         res = requests.post("http://localhost:8080/send_command", json={"command": command})
         if res.ok:
