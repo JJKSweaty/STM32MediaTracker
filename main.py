@@ -110,7 +110,8 @@ def handle_user_input():
         spotifyNext,
         spotifyPrevious,
         spotifyVolume,
-        spotifySeek
+        spotifySeek,
+        get_current_media
     )
     from metadata import (
         send_play,
@@ -118,18 +119,18 @@ def handle_user_input():
         print_stored_metadata
 
     )
-    print("\n[🎮 CONTROL PANEL]")
+    print("\n[ CONTROL PANEL]")
     print("Type:")
-    print("  1 - ▶️ Play")
-    print("  2 - ⏸ Pause")
-    print("  3 - ⏭ Next")
-    print("  4 - ⏮ Previous")
-    print("  5 - 🔍 Show Current Metadata")
-    print("  6 - 💽 Show Stored Metadata")
-    print("  7 - ❌ Exit")
-    print("  8 - 🔐 Re-auth (Manual Auth)")
-    print("  9 - 🔊 Set Volume")
-    print(" 10 - ⏩ Seek to position (ms)\n")
+    print("  1 -  Play & get current media")
+    print("  2 -  Pause")
+    print("  3 -  Next")
+    print("  4 -  Previous")
+    print("  5 -  Show Current Metadata")
+    print("  6 -  Show Stored Metadata ")
+    print("  7 -  Exit")
+    print("  8 -  Re-auth (Manual Auth)")
+    print("  9 -  Set Volume")
+    print(" 10 -  Seek to position (ms)\n")
 
     while True:
         try:
@@ -137,6 +138,7 @@ def handle_user_input():
 
             if choice == "1":
                 send_play()
+                print(f"[CURRENT MEDIA]: {get_current_media()}")
             elif choice == "2":
                 spotifyPause()
             elif choice == "3":

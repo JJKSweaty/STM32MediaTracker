@@ -10,6 +10,7 @@ import urllib.parse
 import time
 import sys
 from comtypes import CLSCTX_ALL
+import serial
 load_dotenv()
 
 spotify_data = {
@@ -27,6 +28,30 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 encoded = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
 
 # AUDIO SECTION STARTS HERE
+def is_app_playing(app_name):
+    pythoncom.CoInitialize()
+    sessions = AudioUtilities.GetAllSessions()
+    for session in sessions:
+        if session.Process and session.Process.name().lower() == app_name.lower():
+            volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+            if not volume.GetMute() and volume.GetMasterVolume() > 0:
+                return True
+    return False
+
+def get_current_media():
+    spotify_active = is_app_playing("spotify.exe")
+    chrome_active = is_app_playing("chrome.exe")
+    brave_active = is_app_playing("brave.exe")
+    
+    if spotify_active:
+        return "Spotify"
+    elif chrome_active:
+        return "Chrome"
+    elif brave_active:
+        return "Brave"
+    else:
+        return "Unknown"
+
 # This gets all sessions that can have audio
 def get_all_media():
     sessions = AudioUtilities.GetAllSessions()
