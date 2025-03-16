@@ -10,7 +10,6 @@ import urllib.parse
 import time
 import sys
 from comtypes import CLSCTX_ALL
-import serial
 load_dotenv()
 
 spotify_data = {
